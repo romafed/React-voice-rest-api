@@ -1,13 +1,19 @@
-module.exports = function (array1, array2) {
-    if(!array1 || !array2)
-        return false;
+module.exports = function (array1, expressionArr, nameObj) {
+    let array2 = [];
 
-    if (array1.length !== array2.length)
-        return false;
+    if (nameObj) {
+        for (let item of expressionArr) {
+            array2 = [...array2, ...item[nameObj]];
+        }
+    }
 
-    for (let i = 0; i < array1.length; i++) {
-        if (array1[i] != array2[i]) 
-            return false;
+    array2 = expressionArr;
+
+    for (let item1 of array1) {
+        for (let item2 of array2) {
+
+            if (item1 === item2) return false;
+        }
     }
     return true;
 }
