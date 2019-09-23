@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const config = require('config');
 
 module.exports = function(logger) {
     const options = {
@@ -6,6 +7,6 @@ module.exports = function(logger) {
         useFindAndModify: false,
         useCreateIndex: true
     }
-    mongoose.connect('mongodb://localhost/expressions-data',  options)
+    mongoose.connect(config.get('db'),  options)
     .then(() => {logger.info('MongoDb is connected...')});
 }
