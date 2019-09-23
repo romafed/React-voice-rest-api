@@ -1,3 +1,3 @@
 {
-    "password": "VoiceRestApi_password"
+    "jwtKey": "voice_jwtKey"
 }

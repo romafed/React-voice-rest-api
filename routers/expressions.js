@@ -1,14 +1,16 @@
-
-const Joi = require('joi');
+const { Users } = require('../models/user-model');
+const auth = require('../middleware/auth');
 const express = require('express');
 const router = express.Router();
 
 // Data from DB
-const { Expressions } = require('../models/expression-model');
+const { Expressions, validateExpression } = require('../models/expression-model');
 
 // Utils
 const arrCompare = require('../utils/array-compare');
 
+
+// Routers
 router.get('/', async (req, res) => {
     const expressions = await Expressions.find();
     if (!expressions) return res.status(404).send('Cant find expressions');
@@ -17,12 +19,12 @@ router.get('/', async (req, res) => {
 
 
 
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
     // Check request validation
     const { error } = validateExpression(req.body, true);
     if (error) return res.status(400).send(error.details[0].message);
 
-    const { questions, answers } = req.body;
+    const { questions, answers, user } = req.body;
     
     // Check for same questions in DB
     const questionsDb = await Expressions.find({}, '-_id').select('questions');
@@ -32,7 +34,12 @@ router.post('/', async (req, res) => {
     // Create new expression and save it in DB
     const expression = new Expressions({
         questions,
-        answers
+        answers,
+        user: {
+            _id: user._id,
+            name: user.name,
+            surname: user.surname
+        }
     });
 
     const result = await expression.save();
@@ -49,12 +56,12 @@ router.get('/:id', async (req, res) => {
 
 
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth, async (req, res) => {
     // Check for validation in request
     const { error } = validateExpression(req.body, false);
     if (error) return res.status(400).send(error.details[0].message);
 
-    const { questions, answers } = req.body;
+    const { questions, answers, user } = req.body;
     // Check for expression
     const expression = await Expressions.findById(req.params.id);
     if (!expression) return res.status(404).send('Cant find expression with given ID');
@@ -65,6 +72,7 @@ router.put('/:id', async (req, res) => {
         if (!isSame) return res.status(400).send('The question is already exist');
     }
 
+    // Set changes and save
     expression.set({
         questions: questions ? [...expression.questions, ...questions] : expression.questions,
         answers: answers ? [...expression.answers, ...answers] : expression.answers
@@ -76,7 +84,7 @@ router.put('/:id', async (req, res) => {
 
 
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
     try {
         const expression = await Expressions.findByIdAndDelete(req.params.id);
         res.send(expression)
@@ -84,17 +92,5 @@ router.delete('/:id', async (req, res) => {
         res.status(404).send('Cant find expression with given ID');
     }
 });
-
-function validateExpression(expression, isRequired = true) {
-    const schema = {
-        questions:
-            isRequired ? Joi.array().items(Joi.string().lowercase().required()) :
-                Joi.array().items(Joi.string().lowercase()),
-        answers:
-            isRequired ? Joi.array().items(Joi.string().lowercase()).required() :
-                Joi.array().items(Joi.string().lowercase())
-    }
-    return Joi.validate(expression, schema);
-}
 
 module.exports = router;
